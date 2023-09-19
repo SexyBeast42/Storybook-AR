@@ -2,6 +2,8 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.EventSystems;
+using UnityEngine.UI;
 using UnityEngine.XR.ARFoundation;
 using UnityEngine.XR.ARSubsystems;
 using EnhancedTouch = UnityEngine.InputSystem.EnhancedTouch;
@@ -12,20 +14,35 @@ using EnhancedTouch = UnityEngine.InputSystem.EnhancedTouch;
 ///     Move the play area
 ///     Rotate the play area
 ///     Resize the play area
+///
+/// Once the player finishes, the play area will spawn and the player can start the story.
 /// </summary>
 
 [RequireComponent(typeof(ARRaycastManager), typeof(ARPlaneManager))]
 public class PlacePlayAreaOnPlane : MonoBehaviour
 {
-    [SerializeField] private GameObject ghostArea, spawnObj, playArea;
+    // Area gameobj
+    [SerializeField] private GameObject ghostArea, spawnObj, playArea, finalArea;
+    private bool ghostAreaInstantiated, playAreaInstantiated;
 
+    // [SerializeField] private GameObject testObj;
+
+    // For AR
     private ARRaycastManager _arRaycastManager;
     private ARPlaneManager _arPlaneManager;
     private List<ARRaycastHit> _arRaycastHits = new List<ARRaycastHit>();
+    private ARPlane currentPlane;
 
     // Change phase from edit to done
     private enum State {scan, edit, done}
     private State _state;
+    
+    // Edit ghost area
+    [SerializeField] private GameObject editUI;
+    public Slider sizeSlider, rotationSlider;
+    private bool isDragging;
+    private Vector3 offset;
+    private float objSize;
     
     private void Awake()
     {
@@ -33,48 +50,40 @@ public class PlacePlayAreaOnPlane : MonoBehaviour
         _arPlaneManager = GetComponent<ARPlaneManager>();
 
         _state = State.scan;
-    }
-    
-    // To enable the EnhancedTouch support
-    private void OnEnable()
-    {
-        // To simulate touch in Unity Editor
-        EnhancedTouch.TouchSimulation.Enable();
-        EnhancedTouch.EnhancedTouchSupport.Enable();
+
+        ghostAreaInstantiated = false;
+        playAreaInstantiated = false;
         
-        // Subscribe to touch event to cast RayCast
-        EnhancedTouch.Touch.onFingerDown += FingerDown;
+        editUI.SetActive(false);
     }
 
-    private void OnDisable()
+    private void Update()
     {
-        // To simulate touch in Unity Editor
-        EnhancedTouch.TouchSimulation.Disable();
-        EnhancedTouch.EnhancedTouchSupport.Disable();
-        
-        // Unsubscribe to touch event
-        EnhancedTouch.Touch.onFingerDown -= FingerDown;
-    }
-
-    // Function that detects the player's touch input
-    private void FingerDown(EnhancedTouch.Finger finger)
-    {
-        // Calls the function if only 1 finger is down
-        if (finger.index != 0) return;
-        
-        ////////////////////////////////////////////////////////////Logic here if in detecting mode
         switch (_state)
         {
             case State.scan:
-                // Spawn ghost area
-                InstiateGhostArea(finger);
+                if (ghostAreaInstantiated) _state = State.edit;
                 
                 break;
             
             case State.edit:
-                // Spawn play area
+                // Enable editUI
+                editUI.SetActive(true);
                 
-                InstatiatePlayArea(spawnObj);
+                // Move ghost area
+                //MoveGameObject(EnhancedTouch.Touch.activeTouches[0]);
+                
+                // Spawn play area through button press
+                
+                ChangeObjSize(sizeSlider.value);
+                ChangeObjRotation(rotationSlider.value);
+                
+                if (playAreaInstantiated)
+                {
+                    editUI.SetActive(false);
+                    _state = State.done;
+                }
+                
                 break;
             
             case State.done:
@@ -85,58 +94,138 @@ public class PlacePlayAreaOnPlane : MonoBehaviour
         }
     }
 
-    // Create PlayArea if the raycast is within a valid plane
-    private void InstiateGhostArea(EnhancedTouch.Finger finger)
+    // To enable the EnhancedTouch support
+    private void OnEnable()
+    {
+        // To simulate touch in Unity Editor
+        EnhancedTouch.TouchSimulation.Enable();
+        EnhancedTouch.EnhancedTouchSupport.Enable();
+        
+        // Subscribe to touch event
+        EnhancedTouch.Touch.onFingerDown += InstantiateGhostArea;
+        EnhancedTouch.Touch.onFingerDown += MoveGameObject;
+    }
+
+    private void OnDisable()
+    {
+        // To simulate touch in Unity Editor
+        EnhancedTouch.TouchSimulation.Disable();
+        EnhancedTouch.EnhancedTouchSupport.Disable();
+        
+        // Unsubscribe to touch event
+        EnhancedTouch.Touch.onFingerDown -= InstantiateGhostArea;
+        EnhancedTouch.Touch.onFingerDown -= MoveGameObject;
+    }
+    
+    // Create ghostArea if the raycast is within a valid plane
+    private void InstantiateGhostArea(EnhancedTouch.Finger finger)
     {
         // Cast a raycast in a within detected plane
-        if (_arRaycastManager.Raycast(finger.currentTouch.screenPosition, 
+        if (!ghostAreaInstantiated 
+            && 
+            _arRaycastManager.Raycast(finger.currentTouch.screenPosition, 
                 _arRaycastHits, 
                 TrackableType.PlaneWithinPolygon))
         {
+            // ARRaycastHit hit = _arRaycastHits[0];
             foreach (ARRaycastHit hit in _arRaycastHits)
             {
                 // Checks if the plane is on the floor
                 if (_arPlaneManager.GetPlane(hit.trackableId).alignment == PlaneAlignment.HorizontalUp)
                 {
+                    // Store current plane
+                    currentPlane = _arPlaneManager.GetPlane(hit.trackableId);
+                    
                     // Position and orientation on the plane
                     Pose pose = hit.pose;
-
-                    spawnObj = Instantiate(ghostArea, pose.position, pose.rotation);
                     
-                    // Rotates the obj so that it faces the player on instatiate
-                    Vector3 pos = spawnObj.transform.position;
+                    // Rotates the obj so that it faces the player on instantiate
+                    Vector3 pos = pose.position;
                     pos.y = 0;
                     
                     Vector3 cameraPos = Camera.main.transform.position;
                     cameraPos.y = 0;
-
+        
                     Vector3 direction = cameraPos - pos;
                     Quaternion targetRotation = Quaternion.LookRotation(direction);
-                    spawnObj.transform.rotation = targetRotation;
+            
+                    // Instantiate object
+                    spawnObj = Instantiate(ghostArea, pose.position, targetRotation);
 
-                    // Change states
-                    _state = State.edit;
+                    if (spawnObj != null) ghostAreaInstantiated = true;
                 }
             }
         }
     }
-
-    private void EditPlayArea()
+    
+    // Move the ghostArea within the valid plane
+    private void MoveGameObject(EnhancedTouch.Finger finger)
     {
+        // Returns if there's more than one finger pressing the screen
+        if (finger.index != 0) return;
         
-    }
+        // Check if touch player is touching screen
+        // if (Input.touchCount < 0 && Input.GetTouch(0).phase != TouchPhase.Began) return;
+        
+        // Cast raycast within a valid plane, and make sure that they aren't tapping on UI
+        if (!playAreaInstantiated 
+            && 
+            _arRaycastManager.Raycast(finger.currentTouch.screenPosition, 
+                _arRaycastHits, 
+                TrackableType.PlaneWithinPolygon)
+            &&
+            !IsPointerOverUIObject())
+        {
+            ARRaycastHit hit = _arRaycastHits[0];
 
-    private void InstatiatePlayArea(GameObject gameObject)
+            // Check if player is tapping on the same plane
+            if (_arPlaneManager.GetPlane(hit.trackableId) == currentPlane)
+            {
+                // Move the Gameobject to touch Pos
+                spawnObj.transform.position = hit.pose.position;
+            }
+        }
+    }
+    
+    private bool IsPointerOverUIObject() {
+        // Referencing this code for GraphicRaycaster https://gist.github.com/stramit/ead7ca1f432f3c0f181f
+        // the ray cast appears to require only eventData.position.
+        PointerEventData eventDataCurrentPosition = new PointerEventData(EventSystem.current);
+        eventDataCurrentPosition.position = new Vector2(Input.mousePosition.x, Input.mousePosition.y);
+ 
+        List<RaycastResult> results = new List<RaycastResult>();
+        EventSystem.current.RaycastAll(eventDataCurrentPosition, results);
+        return results.Count > 0;
+    }
+    
+    public void ChangeObjSize(float newSize)
+    {
+        spawnObj.transform.localScale = new Vector3(newSize, newSize, newSize);
+
+        objSize = newSize;
+    }
+    
+    public void ChangeObjRotation(float newRotation)
+    {
+        spawnObj.transform.rotation = Quaternion.Euler(0f, newRotation, 0f);
+    }
+    
+    public void InstantiatePlayArea()
     {
         spawnObj.SetActive(false);
         
-        Instantiate(playArea, gameObject.transform.position, Quaternion.identity);
+        finalArea = Instantiate(playArea, spawnObj.transform.position, spawnObj.transform.rotation);
+
+        finalArea.transform.localScale = new Vector3(objSize, objSize, objSize);
+
+        playAreaInstantiated = true;
     }
+    
     private void DisablePlanePrefab()
     {
         foreach (ARPlane plane in _arPlaneManager.trackables)
         {
-            plane.gameObject.SetActive(false); 
+            plane.gameObject.SetActive(false);
         }
     }
 }
