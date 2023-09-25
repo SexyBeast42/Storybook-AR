@@ -44,7 +44,7 @@ public class PlacePlayAreaOnPlane : MonoBehaviour
     private Vector3 offset;
     private float objSize;
     
-    private void Awake()
+    void Awake()
     {
         _arRaycastManager = GetComponent<ARRaycastManager>();
         _arPlaneManager = GetComponent<ARPlaneManager>();
@@ -57,7 +57,12 @@ public class PlacePlayAreaOnPlane : MonoBehaviour
         editUI.SetActive(false);
     }
 
-    private void Update()
+    void Update()
+    {
+        HandleStates();
+    }
+
+    private void HandleStates()
     {
         switch (_state)
         {
@@ -131,29 +136,25 @@ public class PlacePlayAreaOnPlane : MonoBehaviour
             foreach (ARRaycastHit hit in _arRaycastHits)
             {
                 // Checks if the plane is on the floor
-                if (_arPlaneManager.GetPlane(hit.trackableId).alignment == PlaneAlignment.HorizontalUp)
-                {
-                    // Store current plane
-                    currentPlane = _arPlaneManager.GetPlane(hit.trackableId);
-                    
-                    // Position and orientation on the plane
-                    Pose pose = hit.pose;
-                    
-                    // Rotates the obj so that it faces the player on instantiate
-                    Vector3 pos = pose.position;
-                    pos.y = 0;
-                    
-                    Vector3 cameraPos = Camera.main.transform.position;
-                    cameraPos.y = 0;
-        
-                    Vector3 direction = cameraPos - pos;
-                    Quaternion targetRotation = Quaternion.LookRotation(direction);
-            
-                    // Instantiate object
-                    spawnObj = Instantiate(ghostArea, pose.position, targetRotation);
+                if (_arPlaneManager.GetPlane(hit.trackableId).alignment != PlaneAlignment.HorizontalUp) return;
 
-                    if (spawnObj != null) ghostAreaInstantiated = true;
-                }
+                currentPlane = _arPlaneManager.GetPlane(hit.trackableId);
+                    
+                // Position and orientation on the plane
+                Pose pose = hit.pose;
+
+                Vector3 pos = pose.position;
+                pos.y = 0;
+                    
+                Vector3 cameraPos = Camera.main.transform.position;
+                cameraPos.y = 0;
+        
+                Vector3 direction = cameraPos - pos;
+                Quaternion targetRotation = Quaternion.LookRotation(direction);
+
+                spawnObj = Instantiate(ghostArea, pose.position, targetRotation);
+
+                if (spawnObj != null) ghostAreaInstantiated = true;
             }
         }
     }
@@ -163,9 +164,6 @@ public class PlacePlayAreaOnPlane : MonoBehaviour
     {
         // Returns if there's more than one finger pressing the screen
         if (finger.index != 0) return;
-        
-        // Check if touch player is touching screen
-        // if (Input.touchCount < 0 && Input.GetTouch(0).phase != TouchPhase.Began) return;
         
         // Cast raycast within a valid plane, and make sure that they aren't tapping on UI
         if (!playAreaInstantiated 
@@ -177,13 +175,10 @@ public class PlacePlayAreaOnPlane : MonoBehaviour
             !IsPointerOverUIObject())
         {
             ARRaycastHit hit = _arRaycastHits[0];
+            
+            if (_arPlaneManager.GetPlane(hit.trackableId) != currentPlane) return;
 
-            // Check if player is tapping on the same plane
-            if (_arPlaneManager.GetPlane(hit.trackableId) == currentPlane)
-            {
-                // Move the Gameobject to touch Pos
-                spawnObj.transform.position = hit.pose.position;
-            }
+            spawnObj.transform.position = hit.pose.position;
         }
     }
     
