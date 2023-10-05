@@ -87,21 +87,29 @@ public class ARLibraryManager : MonoBehaviour
 
         //statusText.text = textures.Count.ToString();
 
+        statusText.text = textures[1].isReadable + " " + textures[1].name;
+        
         Texture2D texture2D = textures[1];
 
+        
+        statusText.text = texture2D.name;
+        statusText.text = texture2D.isReadable + "";
+        
         AddReferenceImageJobState job;
 
-        // if (texture2D.isReadable)
-        // {
-        //     
-        // }
-        
-        string name = "Stick";
-        job = mutableLibrary.ScheduleAddImageWithValidationJob(texture2D, name, 1f);
+
+        if (texture2D.isReadable)
+        {
+            string name = "Stick";
+            job = mutableLibrary.ScheduleAddImageWithValidationJob(texture2D, name, 1f);
+            statusText.text = job.jobHandle.IsCompleted.ToString();
             
-        yield return new WaitUntil(() => job.jobHandle.IsCompleted);
+            yield return new WaitUntil(() => job.jobHandle.IsCompleted);
         
-        statusText.text = mutableLibrary.count + " " + job.status;
+            statusText.text = mutableLibrary.count + " " + job.status;
+        }
+        
+
         
         
         // foreach (Texture2D texture in textures)
