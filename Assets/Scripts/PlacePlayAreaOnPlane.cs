@@ -23,8 +23,6 @@ public class PlacePlayAreaOnPlane : MonoBehaviour
     [SerializeField] private GameObject ghostArea, spawnObj, playArea, finalArea;
     private bool ghostAreaInstantiated, playAreaInstantiated;
 
-    // [SerializeField] private GameObject testObj;
-
     // For AR
     private ARRaycastManager _arRaycastManager;
     private ARPlaneManager _arPlaneManager;
@@ -73,11 +71,6 @@ public class PlacePlayAreaOnPlane : MonoBehaviour
                 // Enable editUI
                 editUI.SetActive(true);
                 
-                // Move ghost area
-                //MoveGameObject(EnhancedTouch.Touch.activeTouches[0]);
-                
-                // Spawn play area through button press
-                
                 ChangeObjSize(sizeSlider.value);
                 ChangeObjRotation(rotationSlider.value);
                 
@@ -123,10 +116,10 @@ public class PlacePlayAreaOnPlane : MonoBehaviour
     // Create ghostArea if the raycast is within a valid plane
     private void InstantiateGhostArea(EnhancedTouch.Finger finger)
     {
+        if (ghostAreaInstantiated) return;
+        
         // Cast a raycast in a within detected plane
-        if (!ghostAreaInstantiated 
-            && 
-            _arRaycastManager.Raycast(finger.currentTouch.screenPosition, 
+        if (_arRaycastManager.Raycast(finger.currentTouch.screenPosition, 
                 _arRaycastHits, 
                 TrackableType.PlaneWithinPolygon))
         {
@@ -151,6 +144,8 @@ public class PlacePlayAreaOnPlane : MonoBehaviour
                 Quaternion targetRotation = Quaternion.LookRotation(direction);
 
                 spawnObj = Instantiate(ghostArea, pose.position, targetRotation);
+                
+                spawnObj.transform.localScale = new Vector3(sizeSlider.value, sizeSlider.value, sizeSlider.value);
 
                 if (spawnObj != null) ghostAreaInstantiated = true;
             }
@@ -161,12 +156,10 @@ public class PlacePlayAreaOnPlane : MonoBehaviour
     private void MoveGameObject(EnhancedTouch.Finger finger)
     {
         // Returns if there's more than one finger pressing the screen
-        if (finger.index != 0) return;
+        if (finger.index != 0 || _state != State.edit) return;
         
         // Cast raycast within a valid plane, and make sure that they aren't tapping on UI
-        if (!playAreaInstantiated 
-            && 
-            _arRaycastManager.Raycast(finger.currentTouch.screenPosition, 
+        if (_arRaycastManager.Raycast(finger.currentTouch.screenPosition, 
                 _arRaycastHits, 
                 TrackableType.PlaneWithinPolygon)
             &&

@@ -1,6 +1,11 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.EventSystems;
+
+/// <summary>
+/// Allows the image to move around using touch input.
+/// </summary>
+
 public class ImageMovement : MonoBehaviour
 {
     public LayerMask excludedLayer;
