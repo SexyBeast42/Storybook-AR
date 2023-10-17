@@ -40,18 +40,12 @@ public class Trigger: MonoBehaviour
         }
     }
 
-    public bool IsStraw()
+    public bool IsTriggered(string material)
     {
-        return isStraw;
-    }
-    
-    public bool IsWood()
-    {
-        return isWood;
-    }
-    
-    public bool IsBrick()
-    {
-        return isBrick;
+        if (material == "Straw") return isStraw;
+        if (material == "Wood") return isWood;
+        if (material == "Brick") return isBrick;
+
+        return false;
     }
 }

@@ -7,9 +7,10 @@ using UnityEngine;
 using UnityEngine.Serialization;
 using UnityEngine.UI;
 
+
 /// <summary>
 /// Allow the player to take a photo and access their photo library. Editing the photo, then saving the photo to be used
-/// for the AR minigames.
+/// for the AR mini games.
 ///     Take photo
 ///     Choose photo
 ///     Edit photo
@@ -21,8 +22,7 @@ public class PhotoLibrary
 {
     public string nameID;
     public Texture2D photoID;
-    public Texture2D editedPhotoID;
-    public GameObject modelID;
+    public GameObject objID;
 }
 
 public class CurrentEdit
@@ -33,13 +33,14 @@ public class CurrentEdit
 public class PhotoLogicManager : MonoBehaviour
 {
     public List<PhotoLibrary> PhotoLibrary = new List<PhotoLibrary>();
-    public CurrentEdit CurrentEdit = new CurrentEdit();
+    private CurrentEdit CurrentEdit = new CurrentEdit();
+    public TextureList TextureList;
 
     private bool isTakingPhoto;
 
     public GameObject takeUI, chooseUI, editUI, saveUI;
 
-    [SerializeField] private TMP_Text chooseText;
+    [SerializeField] private TMP_Text  takePhotoText, chooseText;
     
     public Image imageDisplayed, boxOutline;
     private RectTransform imageDisplayedRect;
@@ -68,6 +69,8 @@ public class PhotoLogicManager : MonoBehaviour
         
         imageDisplayedRect = imageDisplayed.GetComponent<RectTransform>();
 
+        TextureList = FindObjectOfType<TextureList>();
+        
         _state = State.Choose;
     }
     
@@ -84,7 +87,7 @@ public class PhotoLogicManager : MonoBehaviour
                 if (!isTakingPhoto) ToggleTakeUI(true);
                 
                 
-                if (CurrentEdit.number == PhotoLibrary.Count())
+                if (CurrentEdit.number == PhotoLibrary.Count)
                 {
                     ToggleTakeUI(false);
                     
@@ -92,18 +95,25 @@ public class PhotoLogicManager : MonoBehaviour
                     
                     _state = State.Choose;
                 }
+
+                takePhotoText.text = "Take a photo of the " + PhotoLibrary[CurrentEdit.number].nameID;
                 
                 break;
             
             case State.Choose:
                 ToggleChooseUI(true);
                 
-                if (CurrentEdit.number == PhotoLibrary.Count())
+                if (CurrentEdit.number == PhotoLibrary.Count)
                 {
                     ToggleChooseUI(false);
                     
                     CurrentEdit.number = 0;
+
+                    DisplayPhoto(PhotoLibrary[CurrentEdit.number].photoID);
                     
+                    /////////////////
+                    // _state = State.Finished;
+
                     _state = State.Editing;
                 }
                 
@@ -119,9 +129,7 @@ public class PhotoLogicManager : MonoBehaviour
                 
                 ChangePhotoSize(sizeSlider.value);
                 
-                DisplayPhoto();
-                
-                if (CurrentEdit.number == PhotoLibrary.Count())
+                if (CurrentEdit.number == PhotoLibrary.Count)
                 {
                     ToggleEditUI(false);
                     
@@ -179,26 +187,34 @@ public class PhotoLogicManager : MonoBehaviour
             if (path == null) return;
             
             // Create Texture from selected image
-            Texture2D texture = NativeGallery.LoadImageAtPath(path, maxSize);
+            Texture2D photo = NativeGallery.LoadImageAtPath(path, maxSize);
             
-            if (texture == null) return;
+            if (photo == null) return;
             
-            PhotoLibrary[CurrentEdit.number].photoID = texture;
-
+            PhotoLibrary[CurrentEdit.number].photoID = photo;
+            
+            // Guid photoGuid = Guid.NewGuid();
+            //
+            // //////////////////////////
+            // TextureList.Library[CurrentEdit.number].name = name;
+            // TextureList.Library[CurrentEdit.number].texture = photo;
+            // TextureList.Library[CurrentEdit.number].gameObject = PhotoLibrary[CurrentEdit.number].objID;
+            // TextureList.Library[CurrentEdit.number].guid = photoGuid;
+            
             CurrentEdit.number++;
         } );
     }
 
-    public void DisplayPhoto()
+    public void DisplayPhoto(Texture2D texture2D)
     {
-        if (CurrentEdit.number == PhotoLibrary.Count) return;
+        // if (CurrentEdit.number == PhotoLibrary.Count) return;
         
         Texture2D currentTexture = PhotoLibrary[CurrentEdit.number].photoID;
         
-        Sprite currentSprite = Sprite.Create(currentTexture,
-            new Rect(0, 0, currentTexture.width, currentTexture.height), Vector2.one * 0.5f); // Convert to sprite
+        Sprite currentSprite = Sprite.Create(texture2D,
+            new Rect(0, 0, texture2D.width, texture2D.height), Vector2.one * 0.5f); // Convert to sprite
         
-        imageDisplayedRect.sizeDelta = new Vector2(currentTexture.width, currentTexture.height);
+        imageDisplayedRect.sizeDelta = new Vector2(texture2D.width, texture2D.height);
         
         imageDisplayed.sprite = currentSprite;
     }
@@ -218,7 +234,7 @@ public class PhotoLogicManager : MonoBehaviour
 
     public void SavePhoto()
     {
-        if (isTakingPhoto || CurrentEdit.number == PhotoLibrary.Count) return;
+        if (isTakingPhoto || CurrentEdit.number >= PhotoLibrary.Count) return;
 
         isTakingPhoto = true;
         ToggleSaveUI(false);
@@ -230,6 +246,7 @@ public class PhotoLogicManager : MonoBehaviour
     {
         yield return new WaitForEndOfFrame();
 
+        GameObject obj = PhotoLibrary[CurrentEdit.number].objID;
         string name = PhotoLibrary[CurrentEdit.number].nameID;
 
         int width = (int)boxOutline.sprite.rect.width;
@@ -242,27 +259,26 @@ public class PhotoLogicManager : MonoBehaviour
         
         photo.ReadPixels(rect, 0, 0);
         photo.Apply();
+
+        Guid photoGuid = Guid.NewGuid();
         
         // Save photo to Gallery/Photos
         NativeGallery.Permission permission = NativeGallery.SaveImageToGallery(photo, 
             "ARStorybook", 
             name + "edited.png", 
             ( success, path ) => Debug.Log( "Media save result: " + success + " " + path ));
-        
-        // Sprite currentSprite = Sprite.Create(photo,
-        //     new Rect(0, 0, photo.width, photo.height), Vector2.one * 0.5f); // Convert to sprite
 
-        PhotoLibrary[CurrentEdit.number].editedPhotoID = photo;
-
-        // byte[] byteArray = photo.EncodeToPNG();
-        // System.IO.File.WriteAllBytes(Application.dataPath + "/" + name + ".png", byteArray);
-        
-        Destroy(photo); // Avoid memory leaks
+        TextureList.Library[CurrentEdit.number].name = name;
+        TextureList.Library[CurrentEdit.number].texture = photo;
+        TextureList.Library[CurrentEdit.number].gameObject = obj;
+        TextureList.Library[CurrentEdit.number].guid = photoGuid;
 
         CurrentEdit.number++;
         
         ToggleSaveUI(true);
         isTakingPhoto = false;
+        
+        DisplayPhoto(PhotoLibrary[CurrentEdit.number].photoID);
     }
 
     public bool GetPhotoFinished()
