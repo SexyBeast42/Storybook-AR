@@ -1,0 +1,23 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fcf72b5fa1a20614da243f4073fb305a, type: 3}
+  m_Name: Page 22
+  m_EditorClassIdentifier: 
+  pageLine: Well! He huffed and he puffed. He puffed and he huffed. And he huffed,
+    huffed, and he puffed, puffed; but he could not blow the house down. At last,
+    he was so out of breath that he couldn't huff and he couldn't puff anymore. So
+    he stopped to rest and thought a bit.
+  pageModelScene: {fileID: 0}
+  hasMiniGame: 0
+  miniGameType: 0
+  material: 0
+  hasFinishedMiniGame: 0

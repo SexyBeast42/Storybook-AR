@@ -1,0 +1,20 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fcf72b5fa1a20614da243f4073fb305a, type: 3}
+  m_Name: Page 8
+  m_EditorClassIdentifier: 
+  pageLine: 'The next day, a wolf happened to pass by the lane where the three little
+    pigs lived; and he saw the straw house, and he smelled the pig inside. He thought
+    the pig would make a mighty fine meal and his mouth began to water.  '
+  pageModelScene: {fileID: 8401239692510051924, guid: 0bc4c27796d23ef48b8f90ec288a82d0,
+    type: 3}
+  hasMinigame: 0
