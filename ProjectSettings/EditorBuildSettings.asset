@@ -8,13 +8,13 @@ EditorBuildSettings:
   - enabled: 0
     path: Assets/Scenes/TestingScene.unity
     guid: 6bdce89659816455b9f906fc62d19910
-  - enabled: 1
+  - enabled: 0
     path: Assets/Scenes/StoryScene.unity
     guid: ee84d390f873de147b583f1a9edcf372
-  - enabled: 0
+  - enabled: 1
     path: Assets/Scenes/PictureTest.unity
     guid: c2be74fd91c4bca4b848e493decc6cfa
-  - enabled: 0
+  - enabled: 1
     path: Assets/Scenes/AR Track.unity
     guid: 20b3fb28af0aa5747901068522d73ffb
   m_configObjects:

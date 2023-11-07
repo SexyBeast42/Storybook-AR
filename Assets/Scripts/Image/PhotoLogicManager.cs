@@ -71,7 +71,7 @@ public class PhotoLogicManager : MonoBehaviour
 
         TextureList = FindObjectOfType<TextureList>();
         
-        _state = State.Choose;
+        _state = State.Snapping;
     }
     
     void Update()
@@ -171,6 +171,7 @@ public class PhotoLogicManager : MonoBehaviour
             ( success, path ) => Debug.Log( "Media save result: " + success + " " + path ));
         
         Destroy(photo); // Avoid memory leaks
+         
 
         CurrentEdit.number++;
         
